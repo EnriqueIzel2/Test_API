@@ -1,4 +1,4 @@
-package com.example.testapi
+package com.example.testapi.model
 
 data class Post(
   val userId: Int,
