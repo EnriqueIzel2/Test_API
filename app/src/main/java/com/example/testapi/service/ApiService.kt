@@ -1,5 +1,6 @@
-package com.example.testapi
+package com.example.testapi.service
 
+import com.example.testapi.model.Post
 import retrofit2.Call
 import retrofit2.http.GET
 
