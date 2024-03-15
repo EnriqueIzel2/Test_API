@@ -1,41 +1,51 @@
 package com.example.testapi
 
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.util.Log
+import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.Observer
+import androidx.lifecycle.ViewModelProvider
+import com.example.testapi.adapter.PostAdapter
 import com.example.testapi.databinding.ActivityMainBinding
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
+import com.example.testapi.repository.PostRepository
+import com.example.testapi.service.RetrofitInitializer
+import com.example.testapi.viewmodel.PostViewModel
+import com.example.testapi.viewmodel.PostViewModelFactory
 
 class MainActivity : AppCompatActivity() {
 
   private lateinit var binding: ActivityMainBinding
+  private lateinit var postViewModel: PostViewModel
+  private val apiService = RetrofitInitializer.getInstance()
+  private val adapter by lazy { PostAdapter(applicationContext) }
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     binding = ActivityMainBinding.inflate(layoutInflater)
     setContentView(binding.root)
 
-    val apiService = RetrofitInitializer.instance.create(ApiService::class.java)
-    val call = apiService.getPosts()
+    postViewModel = ViewModelProvider(this, PostViewModelFactory(PostRepository(apiService))).get(
+      PostViewModel::class.java
+    )
 
+    binding.recyclerView.adapter = adapter
+  }
 
-    call.enqueue(object : Callback<List<Post>> {
-      override fun onResponse(call: Call<List<Post>>, response: Response<List<Post>>) {
-        if (response.isSuccessful) {
-          val result = response.body()
-          binding.recyclerView.adapter = PostAdapter(applicationContext, result.orEmpty())
+  override fun onStart() {
+    super.onStart()
 
-          Log.i("Resultado Posts", "onResponse: ${result}")
-        } else {
-          Log.e("Resultado Posts", "onResponse: erro ruim")
-        }
-      }
-
-      override fun onFailure(call: Call<List<Post>>, t: Throwable) {
-        Log.e("Resultado Posts", "onFailure: erro na requisição ${t.message}")
-      }
+    postViewModel.postList.observe(this, Observer {
+      adapter.setPostList(it)
     })
+
+    postViewModel.errorMessage.observe(this, Observer {
+      Toast.makeText(this, it, Toast.LENGTH_SHORT).show()
+    })
+  }
+
+  override fun onResume() {
+    super.onResume()
+
+    postViewModel.getPosts()
   }
 }
